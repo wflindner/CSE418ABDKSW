@@ -3,8 +3,17 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../src/db.php';
 
+session_start();
+
 // Allow cross-origin download requests from the frontend.
 header('Access-Control-Allow-Origin: *');
+
+if (!isset($_SESSION['user_id']) || !is_numeric($_SESSION['user_id'])) {
+    http_response_code(401);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['ok' => false, 'error' => 'You must be logged in to export outbreaks']);
+    exit;
+}
 
 try {
     $pdo = db();
