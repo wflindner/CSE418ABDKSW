@@ -4,14 +4,23 @@ declare(strict_types=1);
 require __DIR__ . '/../../src/db.php';
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+if (empty($_SESSION['userid'])) {
+    http_response_code(401);
+    echo json_encode(['ok' => false, 'error' => 'Authentication required'], JSON_UNESCAPED_SLASHES);
+    exit;
+}
 
 try {
     $pdo          = db();
     $disease      = isset($_GET['disease']) ? trim((string)$_GET['disease']) : '';
     $disease_type = isset($_GET['disease_type']) ? trim((string)$_GET['disease_type']) : '';
 
-    $where  = [];
+    
+    $where  = ["(status IS NULL OR status = 'approved')"];
     $params = [];
 
     if ($disease !== '') {
@@ -24,10 +33,9 @@ try {
         $params[] = $disease_type;
     }
 
-    $whereSQL = count($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+    $whereSQL = 'WHERE ' . implode(' AND ', $where);
 
-    // Row-level outbreak records for the homepage dot-plot map.
-    // County may be NULL; the frontend will fall back to state-center coordinates.
+    
     $stmt = $pdo->prepare("
         SELECT
             id,
@@ -38,8 +46,7 @@ try {
             report_date,
             created_at,
             disease_type,
-            mortality_status,
-            status
+            mortality_status
         FROM outbreaks
         $whereSQL
         ORDER BY report_date DESC, id DESC
