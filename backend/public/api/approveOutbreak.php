@@ -10,6 +10,7 @@ header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json; charset=utf-8");
 
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
@@ -25,6 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 if (!isset($_SESSION['user_id']) || !is_numeric($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['ok' => false, 'error' => 'You must be logged in']);
+    exit;
+}
+
+// Admin status is set by the backend when the user logs in.
+if ((int)($_SESSION['is_admin'] ?? 0) !== 1) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => 'Only admins can approve reports']);
     exit;
 }
 
